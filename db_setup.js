@@ -155,7 +155,7 @@ const find =(tablename, cols = undefined, filter = {})=>{
         }
     }
 }
-console.log("find: "+find('students', ['firstname', 'lastname'], {firstname: 'firstname1'}));
+// console.log("find: "+find('students', ['firstname', 'lastname'], {firstname: 'firstname1'}));
 
 const insertOne = (tablename, record)=>{
     let db = loadDB();
@@ -245,17 +245,19 @@ const deleteOne = (tablename, klause) =>{
             let taridx = undefined
             let docs = db[tablename].docs
             for(let i=0; i<docs.length; i++){
-                let tar = cols.every(col => klause[col] === docs[i][col])
+                let tar = cols.every(col => klause[col] == docs[i][col])
+                
                 if(tar){
                     taridx = i;
                     break;
                 }
             }
             
-            if(taridx){
+            if(taridx != undefined){
                 try {
-                    db[tablename].docs.splice(taridx, 1)
-                    fs.writeFileSync(`./db/${dblist.using}.json`, db)
+                    docs.splice(taridx, 1)
+                    db[tablename].docs = docs
+                    fs.writeFileSync(`./db/${dblist.using}.json`, JSON.stringify(db))
                     console.log('Deleted operation successful!')
                 } catch (e) {
                     console.log('DBError, could not delete item!')
@@ -268,6 +270,49 @@ const deleteOne = (tablename, klause) =>{
         }
     }
 }
-deleteOne('students1', {firstname: 'test'})
+// insertOne('students', {firstname: 'firstname1', lastname: 'lastname2'})
+// deleteOne('students', {firstname: 'firstname1'})
 
-module.exports = {insertOne, deleteOne, find, updateOne}
+const deleteMany = (tablename, klause) =>{
+    let db = loadDB()
+    let dblist = dbList()
+    if(db instanceof String){
+        console.log(db)
+    }else{
+        try {
+            if(!db[tablename]){
+                throw new Error(`Collection '${tablename}' does not exist for '${dblist.using}'!`)
+            }
+            let cols = Object.keys(klause)
+            let tarids = []
+            let docs = db[tablename].docs
+            for(let i=0; i<docs.length; i++){
+                let tar = cols.every(col => klause[col] === docs[i][col])
+                if(tar){
+                    tarids.push(i);
+                }
+            }
+
+            for(let i=0; i<tarids.length; i++){
+                docs.splice(tarids[i]-i, 1);
+            }
+            
+            if(tarids){
+                try {
+                    db[tablename].docs = docs
+                    fs.writeFileSync(`./db/${dblist.using}.json`, JSON.stringify(db))
+                    console.log('Deleted operation successful!')
+                } catch (e) {
+                    console.log('DBError, could not delete item!')
+                }
+            }else{
+                console.log(chalk.red('No match found to delete!'))
+            }
+        } catch (e) {
+            console.log(chalk.red(e.message))
+        }
+    }
+}
+// deleteMany('students', {firstname: 'firstname1'})
+
+module.exports = {dbList, getDB, loadDB, useDb, createCollection,  insertOne, deleteOne, deleteMany, find, updateOne}
