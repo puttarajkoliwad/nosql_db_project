@@ -110,13 +110,9 @@ const getCollectionNames = () => {
 // useDb('puttaDB');
 // console.log(getCollectionNames());
 
-// const showTables = ()=>{
-    
-// }
 
 const find =(tablename, cols = undefined, filter = {})=>{
-    let db = loadDB
-    console.log(Object.keys(db)[0])
+    let db = loadDB()
     if(db instanceof String){
         console.log(db)
     }else{
@@ -137,7 +133,7 @@ const find =(tablename, cols = undefined, filter = {})=>{
                 return docs
             }else{
                 let filterCols = Object.keys(filter)
-                let validFilters = filterCols.every(fc => db[tablename].cols.includes(fc))
+                let validFilters = filterCols.every(fc => db[tablename].columns.includes(fc))
                 if(validFilters){
                     let res1 = docs.filter((doc) => filterCols.every(fc => filter[fc] === doc[fc]))
                     if(cols){
@@ -159,7 +155,7 @@ const find =(tablename, cols = undefined, filter = {})=>{
         }
     }
 }
-console.log(find('students'));
+console.log("find: "+find('students', ['firstname', 'lastname'], {firstname: 'firstname1'}));
 
 const insertOne = (tablename, record)=>{
     let db = loadDB();
@@ -168,81 +164,110 @@ const insertOne = (tablename, record)=>{
         console.log(db);
         return null;
     }
+    if(!db[tablename]){
+        console.log(chalk.red(`Collection ${tablename} does not exist for ${dblist.using}!`))
+        return null;
+    }
     if(db[tablename].primarykey && db[tablename].docs.some(doc => doc[primarykey] === record[primarykey])){
         throw new Error("Record already exist!");
     }else{
         try{
             db[tablename].docs.push(record);
             fs.writeFileSync(`./db/${dblist.using}.json`, JSON.stringify(db));
+            console.log('Record inserted successfully.')
         }catch(e){
             console.log(chalk.red('Insertion failed. Try again later!'))
         }
     }
 }
+// console.log(find('students'));
 
-const updateOne = (title, body)=>{
-    notes = loadNotes();
-    const dupeNote = notes.some((note)=>{
-        return note.title === title;
-    })
-    
-    if(!dupeNote){
-        notes.push({title: title, body: body});
-        saveNotes(notes);
+const updateOne = (tablename, klause, update_values)=>{
+    let db = loadDB()
+    let dblist = dbList()
+    if(db instanceof String){
+        console.log(db)
     }else{
-        console.log(chalk.red(`Title ${chalk.blue(title)} already exists!`));
+        try{
+            if(!db[tablename]){
+                throw new Error(`Collection '${tablename}' does not exist for '${dblist.using}'!`)
+            }
+            let colset = Object.keys(update_values)
+            if(db[tablename].primarykey){
+                if(colset.includes(db[tablename].primarykey)){
+                    console.log("Primary-keys can't be modified")
+                    return null
+                }
+            }else{
+                let matchcols = Object.keys(klause)
+                let target = false
+                let tardoc = null
+                for(let doc of db[tablename].docs){
+                    let tar = matchcols.every(col => doc[col] === klause[col])
+                    if(tar){
+                        for(let col of colset){
+                            doc[col] = update_values[col]
+                        }
+                        target = true
+                        tardoc = doc
+                        break
+                    }
+                }
+                if(target){
+                    try {
+                        fs.writeFileSync(`./db/${dblist.using}.json`, JSON.stringify(db))
+                        console.log('updated '+tardoc)
+                    } catch (e) {
+                        console.log('Error updating the record. Retry later!')
+                    }
+                }else{
+                    console.log(chalk.red("No match found to update!"))
+                } 
+            }
+        }catch(e){
+            console.log(chalk.red(e.message))
+        }
     }
 }
+updateOne('students',{firstname: "test1"}, {firstname: "firstname1"})
 
-const deleteOne = (title) =>{
-    const notes = loadNotes();
-    const retainedNotes = notes.filter((note)=>{
-        return note.title !== title;
-    });
-    if (retainedNotes.length === notes.length -1){
-        saveNotes(retainedNotes);
-        console.log(chalk.red(`${chalk.blue(title)} deleted!`));
-    }
-    else{
-        console.log(chalk.red("Error deleting the note. Please check title and retry!"))
-    }
-}
-
-const deleteMany = (title) =>{
-    const notes = loadNotes();
-    const retainedNotes = notes.filter((note)=>{
-        return note.title !== title;
-    });
-    if (retainedNotes.length === notes.length -1){
-        saveNotes(retainedNotes);
-        console.log(chalk.red(`${chalk.blue(title)} deleted!`));
-    }
-    else{
-        console.log(chalk.red("Error deleting the note. Please check title and retry!"))
-    }
-}
-
-const findAll = () => {
-    const notes = loadNotes();
-    console.log(chalk.yellow("Your notes:"));
-    notes.forEach((note) => {
-        console.log(note.title);
-    });
-}
-
-const saveNotes = (notes) =>{
-    const dataJSON = JSON.stringify(notes);
-    fs.writeFileSync('notes.json', dataJSON);
-}
-
-const loadNotes = ()=>{
-    try{
-        const dbuff = fs.readFileSync('notes.json');
-        const strNotes = dbuff.toString();
-        return JSON.parse(strNotes);
-    } catch(e){
-        return [];
+const deleteOne = (tablename, klause) =>{
+    let db = loadDB()
+    let dblist = dbList()
+    if(db instanceof String){
+        console.log(db)
+    }else{
+        try {
+            if(!db[tablename]){
+                throw new Error(`Collection '${tablename}' does not exist for '${dblist.using}'!`)
+            }
+            let cols = Object.keys(klause)
+            let taridx = undefined
+            let docs = db[tablename].docs
+            for(let i=0; i<docs.length; i++){
+                let tar = cols.every(col => klause[col] === docs[i][col])
+                if(tar){
+                    taridx = i;
+                    break;
+                }
+            }
+            
+            if(taridx){
+                try {
+                    db[tablename].docs.splice(taridx, 1)
+                    fs.writeFileSync(`./db/${dblist.using}.json`, db)
+                    console.log('Deleted operation successful!')
+                } catch (e) {
+                    console.log('DBError, could not delete item!')
+                }
+            }else{
+                console.log(chalk.red('No match found to delete!'))
+            }
+        } catch (e) {
+            console.log(chalk.red(e.message))
+        }
     }
 }
+deleteOne('students1', {firstname: 'test'})
 
 module.exports = {insertOne, deleteOne, find, updateOne}
