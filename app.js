@@ -181,18 +181,19 @@ yargs.command({
         },
         values: {
             describe: 'This option takes the fields and values to update. Use JSON format here.',
+            demandOption: true,
             type: 'string'
         },
         klause: {
             describe: 'Select where to match and update the values. Use JSON format here.',
+            demandOption: true,
             type: 'string'
         }
     },
     handler: (argv)=>{
-        let record = argv.filter ? buildRecord(argv.filter) : {}
-        let cols = argv.cols ? argv.cols.split(" ") : undefined
-        let res = dbConfig.updateOne(argv.tablename, cols, record);
-        console.log(res)
+        let klause = buildRecord(argv.klause)
+        let values = buildRecord(argv.values)
+        let res = dbConfig.updateOne(argv.tablename, klause, values);
     }
 })
 

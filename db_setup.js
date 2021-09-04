@@ -201,14 +201,15 @@ const updateOne = (tablename, klause, update_values)=>{
             let colset = Object.keys(update_values)
             if(db[tablename].primarykey){
                 if(colset.includes(db[tablename].primarykey)){
-                    console.log("Primary-keys can't be modified")
+                    console.log(chalk.red("Primary-keys can't be modified"))
                     return null
                 }
             }else{
                 let matchcols = Object.keys(klause)
                 let target = false
                 let tardoc = null
-                for(let doc of db[tablename].docs){
+                let docs = db[tablename].docs
+                for(let doc of docs){
                     let tar = matchcols.every(col => doc[col] === klause[col])
                     if(tar){
                         for(let col of colset){
@@ -221,10 +222,11 @@ const updateOne = (tablename, klause, update_values)=>{
                 }
                 if(target){
                     try {
+                        db[tablename].docs = docs
                         fs.writeFileSync(`./db/${dblist.using}.json`, JSON.stringify(db))
-                        console.log('updated '+tardoc)
+                        console.log(chalk.green('updated '+ JSON.stringify(tardoc)))
                     } catch (e) {
-                        console.log('Error updating the record. Retry later!')
+                        console.log(chalk.red('Error updating the record. Retry later!'))
                     }
                 }else{
                     console.log(chalk.red("No match found to update!"))
