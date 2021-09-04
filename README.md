@@ -1,4 +1,5 @@
-﻿# nosql_db_project
+<img alt="GitHub followers" src="https://img.shields.io/github/followers/puttarajkoliwad?color=green&label=puttarajkoliwad&logoColor=green&style=social">
+
 <a name="install"></a>
 Set-up guidelines
 ------------
