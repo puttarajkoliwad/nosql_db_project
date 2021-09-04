@@ -4,7 +4,13 @@ const chalk = require('chalk')
 const dbList = () => {
     let dbbuff = fs.readFileSync('db/dbList.json');
     let dbstr = dbbuff.toString();
+    // console.log(Object.keys(JSON.parse(dbstr).dbs))
     return JSON.parse(dbstr);
+}
+
+const showDBs = ()=>{
+    let dbs = dbList()
+    console.log(Object.keys(dbs.dbs))
 }
 
 const loadDB = () => {
@@ -55,7 +61,7 @@ const useDb = (name) => {
         return chalk.red('DB not found. Please check the DB name!')
     }
 }
-console.log(useDb("puttaDB2"))
+// console.log(useDb("puttaDB2"))
 
 const createCollection = (name, columns, primarykey = undefined) => {
     let dblist = dbList();
@@ -229,7 +235,7 @@ const updateOne = (tablename, klause, update_values)=>{
         }
     }
 }
-updateOne('students',{firstname: "test1"}, {firstname: "firstname1"})
+// updateOne('students',{firstname: "test1"}, {firstname: "firstname1"})
 
 const deleteOne = (tablename, klause) =>{
     let db = loadDB()
@@ -258,9 +264,9 @@ const deleteOne = (tablename, klause) =>{
                     docs.splice(taridx, 1)
                     db[tablename].docs = docs
                     fs.writeFileSync(`./db/${dblist.using}.json`, JSON.stringify(db))
-                    console.log('Deleted operation successful!')
+                    console.log(chalk.green('Deleted operation successful!'))
                 } catch (e) {
-                    console.log('DBError, could not delete item!')
+                    console.log(chalk.red('DBError, could not delete item!'))
                 }
             }else{
                 console.log(chalk.red('No match found to delete!'))
@@ -315,4 +321,4 @@ const deleteMany = (tablename, klause) =>{
 }
 // deleteMany('students', {firstname: 'firstname1'})
 
-module.exports = {dbList, getDB, loadDB, useDb, createCollection,  insertOne, deleteOne, deleteMany, find, updateOne}
+module.exports = {showDBs, dbList, getDB, loadDB, useDb, createCollection,  insertOne, deleteOne, deleteMany, find, updateOne}

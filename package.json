@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/puttarajkoliwad/nosql_db_project#readme",
   "dependencies": {
-    "chalk": "^4.1.2"
+    "chalk": "^4.1.2",
+    "yargs": "^17.1.1"
   }
 }
